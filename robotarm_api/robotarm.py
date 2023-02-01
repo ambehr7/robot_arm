@@ -1,12 +1,26 @@
 #python -m uvicorn robotarm:app --reload
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
+import fastapi
 from pydantic import BaseModel
+from typing import Union
 import serial
 import time
 app = FastAPI()
 
-ser = serial.Serial('COM4', 9600, timeout=2)
+ser = serial.Serial('COM5', 9600, timeout=2)
 cpos = 0
+
+#format for recieve bytes:
+#{(servo number 1-4), (move speed 1-9), (pos argument), (pos argument (optional)), (pos argument (optional))}
+#post status change of port (status=open or status=close)
+
+class Port(BaseModel):
+	status: str
+
+#class MoveParam(BaseModel):
+#	servo: int
+#	speed: int
+#	position: int
 
 @app.get("/port_status")
 def status():
@@ -16,20 +30,26 @@ def status():
 def current_position():
 	return {cpos}
 
-@app.post("/close_port")
-def close_port():
-	ser.close()
+@app.post("/port_status")
+def port_port(port: Port) -> bool:
+	if port.status == "open":
+		ser.open()
+	elif port.status == "close":
+		ser.close()
+	else:
+		raise valueError("its either open, or closed. Why have you passed in something else. What do you want, you goddam fucker. Why do I exist solely to explain how stupid you are for not simply entering open or closed")
 	return ser.isOpen()
 
-@app.post("/open_port")
-def open_port():
-	ser.open()
-	return ser.isOpen()
+@app.post("/get_rotated")
+def pass_serial_command(servo: int, speed: int, position: int):
+	if servo > 4 or servo < 0:
+		raise valueError("thats not a servo you fucknut")
+	if speed > 9 or speed < 1:
+		raise valueError("too fast or too slow nutts-for-brains")
+	if position < 0 or position > 180:
+		raise valueError("servos dont move that way ya cocknuckle")
 
-@app.post("/rotate")
-def move_servo(pos: int):
-	if pos >= 0 and pos <= 180 and ser.isOpen():
-		ser.write(bytes(str(pos), 'utf-8'))
-		cpos = pos
-		print("complete")
+	str_params = str(servo) + str(speed) + str(position)
+	params = bytes(str_params, 'UTF-8')
+	ser.write(params)
 
