@@ -14,9 +14,12 @@ void setup() {
 
   s1.attach(9);
   s2.attach(10);
-  s3.attach(11);
-  s4.attach(6);
-  pos1, pos2, pos3, pos4 = 0;
+  s3.attach(6);
+  s4.attach(11);
+  pos1 = 10; 
+  pos2 = 100;
+  pos3 = 80;
+  pos4 = 10;
 
   s1.write(pos1);
   delay(200);
@@ -66,10 +69,12 @@ void loop() {
     myData[m] = '\0';  //insert null charcater
     char snum = myData[0];
     int moveSpeed = speedfactor - atoi(myData[1]);
-    char newPos[] = {0, 0, 0};
+    //Serial.print(myData);
+    //Serial.print("   ");
+    char newPos[] = {'0', '0', '0'};
     for(int i = 0; i < 3; i++){
       if(myData[i+2] != '\0'){
-        newPos[i] = myData[i+1];
+        newPos[i] = myData[i+2];
       }
     }
 
@@ -77,23 +82,29 @@ void loop() {
     Serial.print(snum);
     Serial.print("      ");
     Serial.print("newPos: ");
+    
     int x = atoi(newPos); //converts string to int
-    Serial.println(x);
-
+    Serial.print(x);
   switch (snum){
-    case 1:
+    case '1':
       pos1 = makeMove(s1, x, pos1, moveSpeed);
+      break;
 
-    case 2:
+    case '2':
       pos2 = makeMove(s2, x, pos2, moveSpeed);
+      break;
 
-    case 3:
+    case '3':
       pos3 = makeMove(s3, x, pos3, moveSpeed);
+      break;
 
-    case 4:
+    case '4':
       pos4 = makeMove(s4, x, pos4, moveSpeed);
-
+      break;
+    
+    default:
+      break;
   }
-
   }
 }
+

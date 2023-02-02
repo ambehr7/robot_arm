@@ -42,7 +42,7 @@ def port_port(port: Port) -> bool:
 
 @app.post("/get_rotated")
 def pass_serial_command(servo: int, speed: int, position: int):
-	if servo > 4 or servo < 0:
+	if servo > 4 or servo < 1:
 		raise valueError("thats not a servo you fucknut")
 	if speed > 9 or speed < 1:
 		raise valueError("too fast or too slow nutts-for-brains")
@@ -53,3 +53,12 @@ def pass_serial_command(servo: int, speed: int, position: int):
 	params = bytes(str_params, 'UTF-8')
 	ser.write(params)
 
+@app.post("/swivel_base")
+def swivel_base():
+	for x in range(0, 2):
+		pass_serial_command(1, 5, 180)
+		print(180)
+		time.sleep(1)
+		pass_serial_command(1, 5, 0)
+		print(0)
+		time.sleep(1)
