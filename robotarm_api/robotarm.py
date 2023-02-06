@@ -3,19 +3,29 @@ from fastapi import Body, FastAPI
 import fastapi
 from pydantic import BaseModel
 from typing import Union
+import pydantic
 import serial
 import time
-app = FastAPI()
-
-ser = serial.Serial('COM5', 9600, timeout=2)
-cpos = 0
+import enum
 
 #format for recieve bytes:
 #{(servo number 1-4), (move speed 1-9), (pos argument), (pos argument (optional)), (pos argument (optional))}
 #post status change of port (status=open or status=close)
+app = FastAPI()
+ser = serial.Serial('COM5', 9600, timeout=2)
 
-class Port(BaseModel):
-	status: str
+class PortStatus(enum.Enum):
+	OPEN = "open"
+	CLOSE = "close"
+
+class SerialCommand(BaseModel):
+	servo: pydantic.conint(strict=True, ge=1, le=4)
+	speed: pydantic.conint(strict=True, ge=1, le=9)
+	position: pydantic.conint(strict=True, ge=0, le=180)
+
+class Servo(BaseModel):
+	servo_num: pydantic.conint(strict=True, ge=1, le=4)
+	position: pydantic.conint(strict=True, ge=0, le=180)
 
 #class MoveParam(BaseModel):
 #	servo: int
@@ -26,32 +36,17 @@ class Port(BaseModel):
 def status():
 	return {ser.isOpen()}
 
-@app.get("/current_position")
-def current_position():
-	return {cpos}
 
 @app.post("/port_status")
-def port_port(port: Port) -> bool:
-	if port.status == "open":
-		ser.open()
-	elif port.status == "close":
-		ser.close()
-	else:
-		raise valueError("its either open, or closed. Why have you passed in something else. What do you want, you goddam fucker. Why do I exist solely to explain how stupid you are for not simply entering open or closed")
-	return ser.isOpen()
+def port_port(status: PortStatus) -> PortStatus:
+	getattr(ser, status.value)()
+	
 
-@app.post("/get_rotated")
-def pass_serial_command(servo: int, speed: int, position: int):
-	if servo > 4 or servo < 1:
-		raise valueError("thats not a servo you fucknut")
-	if speed > 9 or speed < 1:
-		raise valueError("too fast or too slow nutts-for-brains")
-	if position < 0 or position > 180:
-		raise valueError("servos dont move that way ya cocknuckle")
-
-	str_params = str(servo) + str(speed) + str(position)
-	params = bytes(str_params, 'UTF-8')
+@app.post("/rotate")
+def pass_serial_command(command: SerialCommand):
+	params = f"{command.servo}{command.speed}{command.position}".encode("utf-8")
 	ser.write(params)
+
 
 @app.post("/swivel_base")
 def swivel_base():
@@ -62,3 +57,6 @@ def swivel_base():
 		pass_serial_command(1, 5, 0)
 		print(0)
 		time.sleep(1)
+
+
+
